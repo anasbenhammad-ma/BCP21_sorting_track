@@ -6,7 +6,6 @@
     <title>Sorting BCP21</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- SheetJS for reading Excel files -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans flex flex-col h-screen">
@@ -77,7 +76,6 @@
                         </tr>
                     </thead>
                     <tbody id="history-table-body" class="bg-white divide-y divide-gray-100">
-                        <!-- History rows will be generated here -->
                     </tbody>
                 </table>
             </div>
@@ -87,38 +85,29 @@
     <script>
         let html5QrcodeScanner;
         
-        // Data stores for fast lookup
         const okParts = new Set();
         const nokParts = new Set();
-        
-        // Data store for scan history
         const scanHistory = [];
 
-        // Initialize Scanner
         function initScanner() {
             html5QrcodeScanner = new Html5QrcodeScanner(
                 "reader",
                 { fps: 10, qrbox: {width: 250, height: 250} },
-                /* verbose= */ false
+                false
             );
             html5QrcodeScanner.render(onScanSuccess, onScanFailure);
         }
 
-        // Handle successful scan
         function onScanSuccess(decodedText) {
-            // Pause scanner so it doesn't keep scanning
             html5QrcodeScanner.pause(true);
 
-            // Clean the text and extract the last 10 characters safely
             const cleanText = decodedText.trim();
             const serialNumber = cleanText.slice(-10);
             
-            // Determine status
             let status = "NOT INCLUDED";
             if (okParts.has(serialNumber)) status = "OK";
             else if (nokParts.has(serialNumber)) status = "NOK";
             
-            // Record history
             scanHistory.push({
                 serial: serialNumber,
                 fullText: cleanText,
@@ -130,10 +119,9 @@
         }
 
         function onScanFailure(error) {
-            // Ignore continuous scan failures
+            // Ignore scan failures
         }
 
-        // Show Full Screen Result
         function showResult(serial, fullText, status) {
             const overlay = document.getElementById('result-overlay');
             const title = document.getElementById('result-title');
@@ -143,7 +131,6 @@
             serialDisplay.textContent = serial;
             fullScanDisplay.textContent = "Full: " + fullText;
 
-            // Remove previous color classes
             overlay.classList.remove('bg-green-500', 'bg-red-600', 'bg-yellow-500');
 
             if (status === "OK") {
@@ -157,12 +144,10 @@
                 title.textContent = "NOT INCLUDED";
             }
 
-            // Display the overlay
             overlay.classList.remove('hidden');
             overlay.classList.add('flex');
         }
 
-        // Hide overlay and resume scanner
         function resetScanner() {
             const overlay = document.getElementById('result-overlay');
             overlay.classList.add('hidden');
@@ -173,7 +158,6 @@
             }
         }
 
-        // Fetch and parse Excel file from the same directory (GitHub repo)
         async function fetchExcelData(filename, targetSet) {
             try {
                 const response = await fetch(filename);
@@ -184,10 +168,8 @@
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 
-                // Convert to array of arrays
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                 
-                // Add every cell to the Set (forcing it to a trimmed string)
                 jsonData.forEach(row => {
                     row.forEach(cell => {
                         if (cell !== null && cell !== undefined) {
@@ -202,11 +184,9 @@
             }
         }
 
-        // Load both files on startup
         async function loadDatabases() {
             const statusEl = document.getElementById('db-status');
             
-            // Fetch both files simultaneously
             const [okLoaded, nokLoaded] = await Promise.all([
                 fetchExcelData('ok_parts.xlsx', okParts),
                 fetchExcelData('nok_parts.xlsx', nokParts)
@@ -221,7 +201,6 @@
             }
         }
         
-        // Admin Panel Logic
         function showAdmin() {
             const pin = prompt("Enter Admin PIN:");
             if (pin === "1234") {
@@ -244,7 +223,6 @@
             const tbody = document.getElementById('history-table-body');
             tbody.innerHTML = '';
             
-            // Show latest first
             const reversedHistory = [...scanHistory].reverse();
             
             if (reversedHistory.length === 0) {
@@ -275,11 +253,10 @@
                 return;
             }
             
-            let csvContent = "Time,Serial,Full Scan Text,Status\n";
+            let csvContent = "Time,Serial,Full Scan Text,Status\\n";
             scanHistory.forEach(r => {
-                // Escape commas in full text just in case
                 const cleanFullText = r.fullText.replace(/,/g, " ");
-                csvContent += `${r.time},${r.serial},${cleanFullText},${r.status}\n`;
+                csvContent += `${r.time},${r.serial},${cleanFullText},${r.status}\\n`;
             });
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -292,7 +269,6 @@
             document.body.removeChild(link);
         }
 
-        // Start everything when page loads
         window.onload = () => {
             initScanner();
             loadDatabases();
