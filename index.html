@@ -275,13 +275,11 @@
                 return;
             }
             
-            let csvContent = "Time,Serial,Full Scan Text,Status
-";
+            let csvContent = "Time,Serial,Full Scan Text,Status\n";
             scanHistory.forEach(r => {
                 // Escape commas in full text just in case
                 const cleanFullText = r.fullText.replace(/,/g, " ");
-                csvContent += `${r.time},${r.serial},${cleanFullText},${r.status}
-`;
+                csvContent += `${r.time},${r.serial},${cleanFullText},${r.status}\n`;
             });
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
